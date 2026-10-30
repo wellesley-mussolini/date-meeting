@@ -42,3 +42,6 @@ next-env.d.ts
 
 # dados locais do plugin de memória do Claude Code
 .remember/
+
+*storybook.log
+storybook-static

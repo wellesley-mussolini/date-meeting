@@ -5,6 +5,14 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
+# Um push novo no mesmo PR cancela a verificação anterior, que já ficou velha.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verificar:
     name: Lint, testes e build
@@ -17,6 +25,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      # Tipos como LayoutProps são gerados pelo Next; num clone limpo eles só existem depois do typegen.
+      - run: npx next typegen
       - run: npx tsc --noEmit
       - run: npm test
       - run: npm run build

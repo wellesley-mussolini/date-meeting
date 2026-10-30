@@ -1,13 +1,15 @@
-export const PERIODO_DO_GIRO_EM_SEGUNDOS = 1.875;
-
-// Pular 7 posições por período espalha o giro pela cena, como no vídeo, em vez de passar para o vizinho.
-const SALTO_ENTRE_CORACOES_QUE_GIRAM = 7;
-const PRIMEIRO_CORACAO_QUE_GIRA = 3;
-
-export function calcularGiroDoCoracao(segundos: number, indiceDoCoracao: number, totalDeCoracoes: number): number {
-  const periodoAtual = Math.floor(segundos / PERIODO_DO_GIRO_EM_SEGUNDOS);
-  const coracaoDaVez = (periodoAtual * SALTO_ENTRE_CORACOES_QUE_GIRAM + PRIMEIRO_CORACAO_QUE_GIRA) % totalDeCoracoes;
-  if (indiceDoCoracao !== coracaoDaVez) return 0;
-  const fracaoDoPeriodo = (segundos % PERIODO_DO_GIRO_EM_SEGUNDOS) / PERIODO_DO_GIRO_EM_SEGUNDOS;
-  return fracaoDoPeriodo * 2 * Math.PI;
+// Uma onda atravessa a cena e cada coração dá meia-volta no próprio eixo enquanto ela passa. Meia-volta
+// basta porque o coração é simétrico: termina igual ao começo e só fica de lado uma vez, como no vídeo.
+// Com a duração do giro igual ao intervalo entre vizinhos, um termina quando o próximo começa (dominó).
+export function calcularGiroNaPassagemDaOnda(
+  segundos: number,
+  atrasoDoCoracao: number,
+  periodoDaOnda: number,
+  duracaoDoGiro: number,
+): number {
+  const segundosDesdeAChegadaDaOnda = (((segundos - atrasoDoCoracao) % periodoDaOnda) + periodoDaOnda) % periodoDaOnda;
+  if (segundosDesdeAChegadaDaOnda >= duracaoDoGiro) return 0;
+  const avancoDoGiro = segundosDesdeAChegadaDaOnda / duracaoDoGiro;
+  const avancoSuavizado = (1 - Math.cos(Math.PI * avancoDoGiro)) / 2;
+  return avancoSuavizado * Math.PI;
 }

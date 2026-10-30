@@ -1,38 +1,48 @@
 import { describe, expect, it } from "vitest";
-import { PERIODO_DO_GIRO_EM_SEGUNDOS, calcularGiroDoCoracao } from "./giroDosCoracoes";
+import { calcularGiroNaPassagemDaOnda } from "./giroDosCoracoes";
 
-const TOTAL_DE_CORACOES = 36;
+const PERIODO_DA_ONDA = 2;
+const DURACAO_DO_GIRO = 0.5;
 
-function buscarCoracoesGirando(segundos: number) {
-  return Array.from({ length: TOTAL_DE_CORACOES }, (_, indice) => indice).filter(
-    (indice) => calcularGiroDoCoracao(segundos, indice, TOTAL_DE_CORACOES) !== 0,
-  );
+function calcularGiro(segundos: number, atrasoDoCoracao: number) {
+  return calcularGiroNaPassagemDaOnda(segundos, atrasoDoCoracao, PERIODO_DA_ONDA, DURACAO_DO_GIRO);
 }
 
-describe("calcularGiroDoCoracao", () => {
-  it("gira um único coração por vez, no meio do período", () => {
-    expect(buscarCoracoesGirando(PERIODO_DO_GIRO_EM_SEGUNDOS * 0.5)).toHaveLength(1);
-    expect(buscarCoracoesGirando(PERIODO_DO_GIRO_EM_SEGUNDOS * 3.25)).toHaveLength(1);
+describe("calcularGiroNaPassagemDaOnda", () => {
+  it("fica parado antes de a onda chegar e depois que ela passa", () => {
+    expect(calcularGiro(0.9, 1)).toBe(0);
+    expect(calcularGiro(1 + DURACAO_DO_GIRO + 0.01, 1)).toBe(0);
   });
 
-  it("dá uma volta completa ao longo do período", () => {
-    const [coracaoGirando] = buscarCoracoesGirando(PERIODO_DO_GIRO_EM_SEGUNDOS * 0.5);
-    expect(calcularGiroDoCoracao(PERIODO_DO_GIRO_EM_SEGUNDOS * 0.25, coracaoGirando, TOTAL_DE_CORACOES)).toBeCloseTo(Math.PI / 2);
-    expect(calcularGiroDoCoracao(PERIODO_DO_GIRO_EM_SEGUNDOS * 0.5, coracaoGirando, TOTAL_DE_CORACOES)).toBeCloseTo(Math.PI);
-    expect(calcularGiroDoCoracao(PERIODO_DO_GIRO_EM_SEGUNDOS * 0.999, coracaoGirando, TOTAL_DE_CORACOES)).toBeGreaterThan(
-      Math.PI * 1.99,
-    );
+  it("dá só meia-volta enquanto a onda passa, um único giro por passagem", () => {
+    expect(calcularGiro(1 + DURACAO_DO_GIRO / 2, 1)).toBeCloseTo(Math.PI / 2);
+    expect(calcularGiro(1 + DURACAO_DO_GIRO * 0.999, 1)).toBeGreaterThan(Math.PI * 0.99);
+    expect(calcularGiro(1 + DURACAO_DO_GIRO * 0.999, 1)).toBeLessThanOrEqual(Math.PI);
   });
 
-  it("troca de coração a cada período", () => {
-    const [primeiroQueGira] = buscarCoracoesGirando(PERIODO_DO_GIRO_EM_SEGUNDOS * 0.5);
-    const [segundoQueGira] = buscarCoracoesGirando(PERIODO_DO_GIRO_EM_SEGUNDOS * 1.5);
-    expect(segundoQueGira).not.toBe(primeiroQueGira);
+  it("começa e termina devagar, como um coração que vira de verdade", () => {
+    // No primeiro décimo do tempo anda bem menos que um décimo da meia-volta (um giro uniforme andaria 0,1π).
+    const giroNoPrimeiroDecimo = calcularGiro(1 + DURACAO_DO_GIRO * 0.1, 1);
+    expect(giroNoPrimeiroDecimo).toBeLessThan(Math.PI * 0.05);
   });
 
-  it("espalha o giro pela cena em vez de andar para o vizinho", () => {
-    const [primeiroQueGira] = buscarCoracoesGirando(PERIODO_DO_GIRO_EM_SEGUNDOS * 0.5);
-    const [segundoQueGira] = buscarCoracoesGirando(PERIODO_DO_GIRO_EM_SEGUNDOS * 1.5);
-    expect(Math.abs(segundoQueGira - primeiroQueGira)).toBeGreaterThan(1);
+  it("volta a girar a cada passagem da onda", () => {
+    expect(calcularGiro(1 + PERIODO_DA_ONDA + DURACAO_DO_GIRO / 2, 1)).toBeCloseTo(Math.PI / 2);
+  });
+
+  it("faz efeito dominó: o próximo coração começa quando o anterior termina", () => {
+    const atrasoDoPrimeiro = 0;
+    const atrasoDoSegundo = DURACAO_DO_GIRO;
+    const meioDoPrimeiroGiro = DURACAO_DO_GIRO * 0.5;
+    const meioDoSegundoGiro = DURACAO_DO_GIRO * 1.5;
+
+    expect(calcularGiro(meioDoPrimeiroGiro, atrasoDoPrimeiro)).toBeGreaterThan(0);
+    expect(calcularGiro(meioDoPrimeiroGiro, atrasoDoSegundo)).toBe(0);
+    expect(calcularGiro(meioDoSegundoGiro, atrasoDoPrimeiro)).toBe(0);
+    expect(calcularGiro(meioDoSegundoGiro, atrasoDoSegundo)).toBeGreaterThan(0);
+  });
+
+  it("aceita atraso maior que o período, para corações longe do ponto de partida da onda", () => {
+    expect(calcularGiro(1 + DURACAO_DO_GIRO / 2, 1 + 3 * PERIODO_DA_ONDA)).toBeCloseTo(Math.PI / 2);
   });
 });

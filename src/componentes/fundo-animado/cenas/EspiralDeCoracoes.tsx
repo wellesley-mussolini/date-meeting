@@ -3,7 +3,7 @@
 import { useId, useRef } from "react";
 import { useAnimacaoDaCena } from "../animacaoDaCena";
 import { criarCaminhoDoCoracao } from "../caminhoDoCoracao";
-import { calcularGiroDoCoracao } from "../giroDosCoracoes";
+import { calcularGiroNaPassagemDaOnda } from "../giroDosCoracoes";
 
 // Anéis parados como no vídeo: cada um tem quase o dobro do raio do anterior e corações proporcionais.
 const CORACOES_POR_ANEL = 12;
@@ -16,6 +16,14 @@ const ALTURA_RELATIVA_AO_RAIO = 0.46;
 const LARGURA_MINIMA_DE_LADO = 0.12;
 const PONTOS_DO_CONTORNO = 120;
 
+// No vídeo o giro corre em dominó no sentido anti-horário: a cada 0,9375 s a onda avança uma posição
+// (30°) e vira, em todos os anéis, os corações daquele ângulo. Às 17,5 s ela está nas 4h30 da tela.
+const DURACAO_DO_GIRO_EM_SEGUNDOS = 0.9375;
+const VELOCIDADE_DA_ONDA_EM_RADIANOS_POR_SEGUNDO = (2 * Math.PI) / CORACOES_POR_ANEL / DURACAO_DO_GIRO_EM_SEGUNDOS;
+const PERIODO_DA_ONDA_EM_SEGUNDOS = (2 * Math.PI) / VELOCIDADE_DA_ONDA_EM_RADIANOS_POR_SEGUNDO;
+const ANGULO_DA_ONDA_AOS_17_5_SEGUNDOS = Math.PI / 4;
+const ANGULO_DA_ONDA_NO_INICIO = ANGULO_DA_ONDA_AOS_17_5_SEGUNDOS + VELOCIDADE_DA_ONDA_EM_RADIANOS_POR_SEGUNDO * 17.5;
+
 // Seno e cosseno variam na última casa entre o Node do servidor e o navegador; arredondar evita
 // atributo diferente na hidratação.
 const arredondarCoordenada = (coordenada: number) => Number(coordenada.toFixed(2));
@@ -26,6 +34,7 @@ type CoracaoDaEspiral = {
   giroDoDesenhoEmGraus: number;
   caminhoDaFace: string;
   deslocamentoDaLateral: { x: number; y: number };
+  atrasoDoGiro: number;
 };
 
 const CORACOES_DA_ESPIRAL: CoracaoDaEspiral[] = Array.from({ length: QUANTIDADE_DE_ANEIS }, (_, anel) => {
@@ -40,6 +49,8 @@ const CORACOES_DA_ESPIRAL: CoracaoDaEspiral[] = Array.from({ length: QUANTIDADE_
       x: arredondarCoordenada(raioDoAnel * Math.cos(anguloNoAnel)),
       y: arredondarCoordenada(raioDoAnel * Math.sin(anguloNoAnel)),
       giroDoDesenhoEmGraus: (giroDoDesenho * 180) / Math.PI,
+      // A onda anda no sentido anti-horário da tela, que no SVG (y para baixo) é o ângulo diminuindo.
+      atrasoDoGiro: (ANGULO_DA_ONDA_NO_INICIO - anguloNoAnel) / VELOCIDADE_DA_ONDA_EM_RADIANOS_POR_SEGUNDO,
       caminhoDaFace: criarCaminhoDoCoracao(PONTOS_DO_CONTORNO, alturaDoCoracao, giroDoDesenho),
       // A luz vem do alto à esquerda: a espessura aparece embaixo à direita de todos os corações.
       deslocamentoDaLateral: {
@@ -56,9 +67,14 @@ export function EspiralDeCoracoes() {
 
   const grupoDaCena = useAnimacaoDaCena("espiral", (segundos) => {
     coracoesQueGiram.current.forEach((coracao, indiceDoCoracao) => {
-      const giro = calcularGiroDoCoracao(segundos, indiceDoCoracao, CORACOES_DA_ESPIRAL.length);
+      const { giroDoDesenhoEmGraus, atrasoDoGiro } = CORACOES_DA_ESPIRAL[indiceDoCoracao];
+      const giro = calcularGiroNaPassagemDaOnda(
+        segundos,
+        atrasoDoGiro,
+        PERIODO_DA_ONDA_EM_SEGUNDOS,
+        DURACAO_DO_GIRO_EM_SEGUNDOS,
+      );
       const larguraAparente = Math.max(Math.abs(Math.cos(giro)), LARGURA_MINIMA_DE_LADO);
-      const { giroDoDesenhoEmGraus } = CORACOES_DA_ESPIRAL[indiceDoCoracao];
       // Achata o coração ao longo do próprio eixo (ponta–vinco), que é o eixo do giro no vídeo.
       coracao?.setAttribute(
         "transform",

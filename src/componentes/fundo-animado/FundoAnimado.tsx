@@ -10,7 +10,7 @@ import { TunelDeCoracoes } from "./cenas/TunelDeCoracoes";
 // em cima e embaixo no celular em pé.
 export function FundoAnimado({ segundoInicial = 0, congelado = false }: Partial<RelogioDaAnimacao>) {
   return (
-    <div aria-hidden className="fixed inset-0 -z-10 overflow-hidden bg-[#ffb2b5]">
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#ffb2b5]">
       <svg
         viewBox="-480 -360 960 720"
         preserveAspectRatio="xMidYMid meet"

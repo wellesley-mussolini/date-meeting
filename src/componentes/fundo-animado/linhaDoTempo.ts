@@ -26,7 +26,12 @@ const QUADROS_DO_CICLO = 2782;
 export const DURACAO_DO_CICLO_EM_SEGUNDOS = QUADROS_DO_CICLO / QUADROS_POR_SEGUNDO;
 
 export function buscarCenaNoInstante(segundos: number): Cena {
-  const quadroNoCiclo = Math.floor(segundos * QUADROS_POR_SEGUNDO) % QUADROS_DO_CICLO;
-  const trechoAtual = TRECHOS_DO_CICLO.findLast(({ quadroInicial }) => quadroInicial <= quadroNoCiclo);
-  return trechoAtual!.cena;
+  const quadroAbsoluto = Math.floor(segundos * QUADROS_POR_SEGUNDO);
+  // Módulo sempre positivo: um instante antes do início conta de trás para frente no ciclo.
+  const quadroNoCiclo = ((quadroAbsoluto % QUADROS_DO_CICLO) + QUADROS_DO_CICLO) % QUADROS_DO_CICLO;
+  let cenaDoTrecho = TRECHOS_DO_CICLO[0].cena;
+  for (const { cena, quadroInicial } of TRECHOS_DO_CICLO) {
+    if (quadroInicial <= quadroNoCiclo) cenaDoTrecho = cena;
+  }
+  return cenaDoTrecho;
 }

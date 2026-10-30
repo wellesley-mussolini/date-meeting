@@ -63,9 +63,11 @@ const CORACOES_DA_ESPIRAL: CoracaoDaEspiral[] = Array.from({ length: QUANTIDADE_
 
 export function EspiralDeCoracoes() {
   const coracoesQueGiram = useRef<Array<SVGGElement | null>>([]);
+  // Último giro escrito no DOM por coração: quase todos estão parados e não precisam ser reescritos.
+  const girosAplicados = useRef<number[]>([]);
   const idDoDegradeDaFace = useId();
 
-  const grupoDaCena = useAnimacaoDaCena("espiral", (segundos) => {
+  const propriedadesDoGrupoDaCena = useAnimacaoDaCena("espiral", (segundos) => {
     coracoesQueGiram.current.forEach((coracao, indiceDoCoracao) => {
       const { giroDoDesenhoEmGraus, atrasoDoGiro } = CORACOES_DA_ESPIRAL[indiceDoCoracao];
       const giro = calcularGiroNaPassagemDaOnda(
@@ -74,6 +76,8 @@ export function EspiralDeCoracoes() {
         PERIODO_DA_ONDA_EM_SEGUNDOS,
         DURACAO_DO_GIRO_EM_SEGUNDOS,
       );
+      if (girosAplicados.current[indiceDoCoracao] === giro) return;
+      girosAplicados.current[indiceDoCoracao] = giro;
       const larguraAparente = Math.max(Math.abs(Math.cos(giro)), LARGURA_MINIMA_DE_LADO);
       // Achata o coração ao longo do próprio eixo (ponta–vinco), que é o eixo do giro no vídeo.
       coracao?.setAttribute(
@@ -84,7 +88,7 @@ export function EspiralDeCoracoes() {
   });
 
   return (
-    <g ref={grupoDaCena} data-cena="espiral">
+    <g {...propriedadesDoGrupoDaCena}>
       <defs>
         <linearGradient id={idDoDegradeDaFace} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#ffa774" />

@@ -73,24 +73,26 @@ type CamadasDaColuna = {
   sombra: SVGGElement | null;
   fatias: Array<SVGGElement | null>;
   face: SVGGElement | null;
+  // Último giro escrito no DOM: coluna parada repete o mesmo giro e não precisa ser reescrita.
+  giroAplicado?: number;
 };
 
 export function CampoDeCoracoes() {
   const gradeQueSobe = useRef<SVGGElement>(null);
-  const camadasDasColunas = useRef<CamadasDaColuna[]>(
-    COLUNAS_DE_CORACOES.map(() => ({ sombra: null, fatias: [], face: null })),
-  );
+  const camadasDasColunas = useRef<CamadasDaColuna[]>([]);
+  const buscarCamadasDaColuna = (indiceDaColuna: number) =>
+    (camadasDasColunas.current[indiceDaColuna] ??= { sombra: null, fatias: [], face: null });
   const idDaFace = useId();
   const idDaLateral = useId();
   const idDaSombra = useId();
   const idDoDegradeDaFace = useId();
 
-  const grupoDaCena = useAnimacaoDaCena("campo", (segundos) => {
+  const propriedadesDoGrupoDaCena = useAnimacaoDaCena("campo", (segundos) => {
     const fracaoDaSubida = (segundos % PERIODO_DA_SUBIDA_EM_SEGUNDOS) / PERIODO_DA_SUBIDA_EM_SEGUNDOS;
     gradeQueSobe.current?.setAttribute("transform", `translate(0 ${-fracaoDaSubida * PASSO_VERTICAL})`);
 
-    camadasDasColunas.current.forEach(({ sombra, fatias, face }, indiceDaColuna) => {
-      const { x, atrasoDaOnda } = COLUNAS_DE_CORACOES[indiceDaColuna];
+    COLUNAS_DE_CORACOES.forEach(({ x, atrasoDaOnda }, indiceDaColuna) => {
+      const camadasDaColuna = buscarCamadasDaColuna(indiceDaColuna);
       const avancoDaOnda = calcularGiroNaPassagemDaOnda(
         segundos,
         atrasoDaOnda,
@@ -99,7 +101,10 @@ export function CampoDeCoracoes() {
       );
       // O avanço vai de 0 a π com início e fim suaves; o seno dele inclina e devolve a coluna.
       const giro = reduzirGiroAoLadoDaFace(GIRO_DE_REPOUSO + INCLINACAO_MAXIMA * Math.sin(avancoDaOnda));
+      if (camadasDaColuna.giroAplicado === giro) return;
+      camadasDaColuna.giroAplicado = giro;
       const colunaEstaGirando = avancoDaOnda !== 0;
+      const { sombra, fatias, face } = camadasDaColuna;
 
       sombra?.setAttribute(
         "transform",
@@ -116,7 +121,7 @@ export function CampoDeCoracoes() {
   });
 
   return (
-    <g ref={grupoDaCena} data-cena="campo">
+    <g {...propriedadesDoGrupoDaCena}>
       <defs>
         <linearGradient id={idDoDegradeDaFace} x1="1" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#fffbfe" />
@@ -135,13 +140,13 @@ export function CampoDeCoracoes() {
             alturasDosCoracoes.map((y) => <use key={y} href={`#${idDoDesenho}`} x={x} y={y} />);
           return (
             <g key={x}>
-              <g ref={(sombra) => { camadasDasColunas.current[indiceDaColuna].sombra = sombra; }}>{desenharColuna(idDaSombra)}</g>
+              <g ref={(sombra) => { buscarCamadasDaColuna(indiceDaColuna).sombra = sombra; }}>{desenharColuna(idDaSombra)}</g>
               {PROFUNDIDADES_DAS_FATIAS.map((profundidade, indiceDaFatia) => (
-                <g key={profundidade} ref={(fatia) => { camadasDasColunas.current[indiceDaColuna].fatias[indiceDaFatia] = fatia; }}>
+                <g key={profundidade} ref={(fatia) => { buscarCamadasDaColuna(indiceDaColuna).fatias[indiceDaFatia] = fatia; }}>
                   {desenharColuna(idDaLateral)}
                 </g>
               ))}
-              <g ref={(face) => { camadasDasColunas.current[indiceDaColuna].face = face; }}>{desenharColuna(idDaFace)}</g>
+              <g ref={(face) => { buscarCamadasDaColuna(indiceDaColuna).face = face; }}>{desenharColuna(idDaFace)}</g>
             </g>
           );
         })}

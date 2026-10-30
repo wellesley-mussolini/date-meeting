@@ -30,6 +30,11 @@ describe("buscarCenaNoInstante", () => {
     expect(DURACAO_DO_CICLO_EM_SEGUNDOS).toBeCloseTo(2782 / 24);
   });
 
+  it("conta de trás para frente um instante antes do início, em vez de quebrar", () => {
+    // -1 s são 24 quadros antes do início: quadro 2758 do ciclo, dentro do túnel final.
+    expect(buscarCenaNoInstante(-1)).toBe("tunel");
+  });
+
   it("volta ao campo ao recomeçar o ciclo", () => {
     expect(buscarCenaNoInstante(DURACAO_DO_CICLO_EM_SEGUNDOS)).toBe("campo");
     expect(buscarCenaNoInstante(DURACAO_DO_CICLO_EM_SEGUNDOS + segundosDoQuadro(209))).toBe("tunel");

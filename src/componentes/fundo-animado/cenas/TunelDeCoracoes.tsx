@@ -19,7 +19,7 @@ const CAMINHO_DO_ANEL = criarCaminhoDoCoracao(120, ALTURA_DO_DESENHO_BASE);
 export function TunelDeCoracoes() {
   const aneisDoTunel = useRef<Array<SVGPathElement | null>>([]);
 
-  const grupoDaCena = useAnimacaoDaCena("tunel", (segundos) => {
+  const propriedadesDoGrupoDaCena = useAnimacaoDaCena("tunel", (segundos) => {
     const avancoDoZoom = (segundos % INTERVALO_ENTRE_ANEIS_EM_SEGUNDOS) / INTERVALO_ENTRE_ANEIS_EM_SEGUNDOS;
     aneisDoTunel.current.forEach((anel, posicaoNoTunel) => {
       const alturaDoAnel = ALTURA_DO_ANEL_MAIS_EXTERNO * RAZAO_ENTRE_ANEIS ** (posicaoNoTunel - avancoDoZoom);
@@ -28,7 +28,7 @@ export function TunelDeCoracoes() {
   });
 
   return (
-    <g ref={grupoDaCena} data-cena="tunel">
+    <g {...propriedadesDoGrupoDaCena}>
       <rect x={-5000} y={-5000} width={10000} height={10000} className="fill-[#ffbafc]" />
       {Array.from({ length: QUANTIDADE_DE_ANEIS }, (_, posicaoNoTunel) => (
         <path

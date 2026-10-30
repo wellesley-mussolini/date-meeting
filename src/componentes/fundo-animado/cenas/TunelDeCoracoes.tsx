@@ -10,8 +10,9 @@ const COR_DO_FUNDO = new Color("#ffbafc");
 // No vídeo cada anel tem 0,72 do tamanho do anel de fora e um novo nasce no centro a cada 0,152 s.
 const RAZAO_ENTRE_ANEIS = 0.72;
 const INTERVALO_ENTRE_ANEIS_EM_SEGUNDOS = 0.152;
-const QUANTIDADE_DE_ANEIS = 24;
-const ALTURA_DO_ANEL_MAIS_EXTERNO = 14;
+// O anel de fora passa da tela até no celular em pé; os de dentro somem no ponto de fuga.
+const QUANTIDADE_DE_ANEIS = 28;
+const ALTURA_DO_ANEL_MAIS_EXTERNO = 40;
 const ESPESSURA_DO_ANEL = 0.045;
 
 export function TunelDeCoracoes() {
@@ -23,10 +24,8 @@ export function TunelDeCoracoes() {
     return new ShapeGeometry(contornoExterno);
   }, []);
 
-  const grupoDaCena = useAnimacaoDaCena("tunel", (segundos, { scene, camera }) => {
+  const grupoDaCena = useAnimacaoDaCena("tunel", (segundos, { scene }) => {
     scene.background = COR_DO_FUNDO;
-    camera.position.set(0, 0, 6.4);
-    camera.lookAt(0, 0, 0);
     const avancoDoZoom = (segundos % INTERVALO_ENTRE_ANEIS_EM_SEGUNDOS) / INTERVALO_ENTRE_ANEIS_EM_SEGUNDOS;
     aneisDoTunel.current.forEach((anel, posicaoNoTunel) => {
       const alturaDoAnel = ALTURA_DO_ANEL_MAIS_EXTERNO * RAZAO_ENTRE_ANEIS ** (posicaoNoTunel - avancoDoZoom);

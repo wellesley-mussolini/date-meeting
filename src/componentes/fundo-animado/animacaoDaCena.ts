@@ -11,7 +11,7 @@ export type RelogioDaAnimacao = {
   congelado: boolean;
 };
 
-export const RelogioDaAnimacaoContext = createContext<RelogioDaAnimacao>({
+export const ContextoDoRelogioDaAnimacao = createContext<RelogioDaAnimacao>({
   segundoInicial: 0,
   congelado: false,
 });
@@ -22,7 +22,7 @@ export function useAnimacaoDaCena(
   animarQuadro: (segundos: number, estadoDoCanvas: RootState) => void,
 ) {
   const grupoDaCena = useRef<Group>(null);
-  const { segundoInicial, congelado } = useContext(RelogioDaAnimacaoContext);
+  const { segundoInicial, congelado } = useContext(ContextoDoRelogioDaAnimacao);
 
   useFrame((estadoDoCanvas) => {
     if (!grupoDaCena.current) return;

@@ -13,7 +13,7 @@ const COR_DO_CORACAO = "#ff8f5a";
 const CORACOES_POR_ANEL = 12;
 const RAIO_DO_ANEL_INTERNO = 0.46;
 const CRESCIMENTO_ENTRE_ANEIS = 1.95;
-const QUANTIDADE_DE_ANEIS = 5;
+const QUANTIDADE_DE_ANEIS = 6;
 const ALTURA_RELATIVA_AO_RAIO = 0.46;
 const PROFUNDIDADE_DO_CORACAO = 0.35;
 
@@ -58,10 +58,8 @@ export function EspiralDeCoracoes() {
     return coracoes;
   }, []);
 
-  const grupoDaCena = useAnimacaoDaCena("espiral", (segundos, { scene, camera }) => {
+  const grupoDaCena = useAnimacaoDaCena("espiral", (segundos, { scene }) => {
     scene.background = COR_DO_FUNDO;
-    camera.position.set(0, 0, 6.4);
-    camera.lookAt(0, 0, 0);
     coracoesQueGiram.current.forEach((coracao, indiceDoCoracao) => {
       if (coracao) coracao.rotation.y = calcularGiroDoCoracao(segundos, indiceDoCoracao, coracoesDaEspiral.length);
     });

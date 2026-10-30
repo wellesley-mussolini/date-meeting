@@ -1,8 +1,6 @@
 "use client";
 
-import { useFrame, type RootState } from "@react-three/fiber";
-import { createContext, useContext, useRef } from "react";
-import type { Group } from "three";
+import { createContext, useContext, useEffectEvent, useLayoutEffect, useRef } from "react";
 import { buscarCenaNoInstante, type Cena } from "./linhaDoTempo";
 
 export type RelogioDaAnimacao = {
@@ -17,20 +15,28 @@ export const ContextoDoRelogioDaAnimacao = createContext<RelogioDaAnimacao>({
 });
 
 // Liga a cena só enquanto a linha do tempo a mantém no ar; fora dela o grupo fica oculto e não anima.
-export function useAnimacaoDaCena(
-  cena: Cena,
-  animarQuadro: (segundos: number, estadoDoCanvas: RootState) => void,
-) {
-  const grupoDaCena = useRef<Group>(null);
+// O primeiro quadro é desenhado na montagem, antes da pintura, para a cena já abrir no estado certo.
+export function useAnimacaoDaCena(cena: Cena, animarQuadro: (segundos: number) => void) {
+  const grupoDaCena = useRef<SVGGElement>(null);
   const { segundoInicial, congelado } = useContext(ContextoDoRelogioDaAnimacao);
+  const animarQuadroAtual = useEffectEvent(animarQuadro);
 
-  useFrame((estadoDoCanvas) => {
-    if (!grupoDaCena.current) return;
-    const segundos = segundoInicial + (congelado ? 0 : estadoDoCanvas.clock.elapsedTime);
-    const cenaEstaNoAr = buscarCenaNoInstante(segundos) === cena;
-    grupoDaCena.current.visible = cenaEstaNoAr;
-    if (cenaEstaNoAr) animarQuadro(segundos, estadoDoCanvas);
-  });
+  useLayoutEffect(() => {
+    const instanteDaMontagem = performance.now();
+    let pedidoDoProximoQuadro = 0;
+
+    const desenharQuadro = () => {
+      const segundosDesdeAMontagem = congelado ? 0 : (performance.now() - instanteDaMontagem) / 1000;
+      const segundos = segundoInicial + segundosDesdeAMontagem;
+      const cenaEstaNoAr = buscarCenaNoInstante(segundos) === cena;
+      grupoDaCena.current?.setAttribute("display", cenaEstaNoAr ? "inline" : "none");
+      if (cenaEstaNoAr) animarQuadroAtual(segundos);
+      if (!congelado) pedidoDoProximoQuadro = requestAnimationFrame(desenharQuadro);
+    };
+
+    desenharQuadro();
+    return () => cancelAnimationFrame(pedidoDoProximoQuadro);
+  }, [cena, segundoInicial, congelado]);
 
   return grupoDaCena;
 }

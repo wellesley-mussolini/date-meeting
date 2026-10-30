@@ -1,46 +1,27 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
-import { useSyncExternalStore } from "react";
 import { ContextoDoRelogioDaAnimacao, type RelogioDaAnimacao } from "./animacaoDaCena";
 import { CampoDeCoracoes } from "./cenas/CampoDeCoracoes";
 import { EspiralDeCoracoes } from "./cenas/EspiralDeCoracoes";
 import { TunelDeCoracoes } from "./cenas/TunelDeCoracoes";
-import { CameraEnquadrada } from "./CameraEnquadrada";
 
-let navegadorTemWebGL: boolean | undefined;
-
-// Com a aceleração de hardware desligada o three.js não cria o renderizador e o erro derrubaria o
-// layout inteiro. O contexto de teste é liberado na hora porque o navegador limita quantos existem.
-function verificarSuporteAoWebGL(): boolean {
-  if (navegadorTemWebGL === undefined) {
-    const contextoDeTeste = document.createElement("canvas").getContext("webgl2");
-    navegadorTemWebGL = contextoDeTeste !== null;
-    contextoDeTeste?.getExtension("WEBGL_lose_context")?.loseContext();
-  }
-  return navegadorTemWebGL;
-}
-
-const assinarNada = () => () => {};
-const servidorNaoRenderizaWebGL = () => false;
-
+// O viewBox é o quadro do vídeo (960 × 720) com a origem no centro. Com "meet" o quadro inteiro cabe em
+// qualquer tela, e o que as cenas desenham além dele preenche as sobras: laterais no monitor largo,
+// em cima e embaixo no celular em pé.
 export function FundoAnimado({ segundoInicial = 0, congelado = false }: Partial<RelogioDaAnimacao>) {
-  const podeRenderizar3D = useSyncExternalStore(assinarNada, verificarSuporteAoWebGL, servidorNaoRenderizaWebGL);
-
   return (
-    // A cor do chão do campo aparece antes do WebGL carregar e fica como fundo quando ele não existe.
-    <div aria-hidden className="fixed inset-0 -z-10 bg-[#ffb2b5]">
-      {podeRenderizar3D && (
-        // flat desliga o tone mapping para as cores saírem iguais às medidas no vídeo.
-        <Canvas flat shadows="percentage" camera={{ fov: 50 }} dpr={[1, 2]}>
-          <ContextoDoRelogioDaAnimacao value={{ segundoInicial, congelado }}>
-            <CameraEnquadrada />
-            <CampoDeCoracoes />
-            <TunelDeCoracoes />
-            <EspiralDeCoracoes />
-          </ContextoDoRelogioDaAnimacao>
-        </Canvas>
-      )}
+    <div aria-hidden className="fixed inset-0 -z-10 overflow-hidden bg-[#ffb2b5]">
+      <svg
+        viewBox="-480 -360 960 720"
+        preserveAspectRatio="xMidYMid meet"
+        className="size-full overflow-visible"
+      >
+        <ContextoDoRelogioDaAnimacao value={{ segundoInicial, congelado }}>
+          <CampoDeCoracoes />
+          <TunelDeCoracoes />
+          <EspiralDeCoracoes />
+        </ContextoDoRelogioDaAnimacao>
+      </svg>
     </div>
   );
 }

@@ -1,86 +1,97 @@
 "use client";
 
-import { useMemo, useRef } from "react";
-import { Color, ExtrudeGeometry, MeshStandardMaterial, type Mesh } from "three";
+import { useId, useRef } from "react";
 import { useAnimacaoDaCena } from "../animacaoDaCena";
-import { criarFormaDoCoracao } from "../formaDoCoracao";
+import { criarCaminhoDoCoracao } from "../caminhoDoCoracao";
 import { calcularGiroDoCoracao } from "../giroDosCoracoes";
-
-const COR_DO_FUNDO = new Color("#ffe0fe");
-const COR_DO_CORACAO = "#ff8f5a";
 
 // Anéis parados como no vídeo: cada um tem quase o dobro do raio do anterior e corações proporcionais.
 const CORACOES_POR_ANEL = 12;
-const RAIO_DO_ANEL_INTERNO = 0.46;
+const RAIO_DO_ANEL_INTERNO = 55;
 const CRESCIMENTO_ENTRE_ANEIS = 1.95;
+// O sexto anel cobre os cantos do celular em pé.
 const QUANTIDADE_DE_ANEIS = 6;
 const ALTURA_RELATIVA_AO_RAIO = 0.46;
-const PROFUNDIDADE_DO_CORACAO = 0.35;
+// De lado o coração ainda mostra a espessura, em vez de sumir numa linha.
+const LARGURA_MINIMA_DE_LADO = 0.12;
+const PONTOS_DO_CONTORNO = 120;
 
-type CoracaoDaEspiral = { x: number; y: number; anguloNoAnel: number; altura: number };
+// Seno e cosseno variam na última casa entre o Node do servidor e o navegador; arredondar evita
+// atributo diferente na hidratação.
+const arredondarCoordenada = (coordenada: number) => Number(coordenada.toFixed(2));
+
+type CoracaoDaEspiral = {
+  x: number;
+  y: number;
+  giroDoDesenhoEmGraus: number;
+  caminhoDaFace: string;
+  deslocamentoDaLateral: { x: number; y: number };
+};
+
+const CORACOES_DA_ESPIRAL: CoracaoDaEspiral[] = Array.from({ length: QUANTIDADE_DE_ANEIS }, (_, anel) => {
+  const raioDoAnel = RAIO_DO_ANEL_INTERNO * CRESCIMENTO_ENTRE_ANEIS ** anel;
+  const alturaDoCoracao = raioDoAnel * ALTURA_RELATIVA_AO_RAIO;
+  const defasagemDoAnel = anel % 2 === 0 ? 0 : Math.PI / CORACOES_POR_ANEL;
+  return Array.from({ length: CORACOES_POR_ANEL }, (_, posicaoNoAnel) => {
+    const anguloNoAnel = (posicaoNoAnel / CORACOES_POR_ANEL) * 2 * Math.PI + defasagemDoAnel;
+    // Um quarto de volta além do ângulo da posição deixa a ponta apontando para o centro.
+    const giroDoDesenho = anguloNoAnel + Math.PI / 2;
+    return {
+      x: arredondarCoordenada(raioDoAnel * Math.cos(anguloNoAnel)),
+      y: arredondarCoordenada(raioDoAnel * Math.sin(anguloNoAnel)),
+      giroDoDesenhoEmGraus: (giroDoDesenho * 180) / Math.PI,
+      caminhoDaFace: criarCaminhoDoCoracao(PONTOS_DO_CONTORNO, alturaDoCoracao, giroDoDesenho),
+      // A luz vem do alto à esquerda: a espessura aparece embaixo à direita de todos os corações.
+      deslocamentoDaLateral: {
+        x: arredondarCoordenada(alturaDoCoracao * 0.05),
+        y: arredondarCoordenada(alturaDoCoracao * 0.07),
+      },
+    };
+  });
+}).flat();
 
 export function EspiralDeCoracoes() {
-  const coracoesQueGiram = useRef<Array<Mesh | null>>([]);
+  const coracoesQueGiram = useRef<Array<SVGGElement | null>>([]);
+  const idDoDegradeDaFace = useId();
 
-  const geometriaDoCoracao = useMemo(() => {
-    const geometria = new ExtrudeGeometry(criarFormaDoCoracao(32), {
-      depth: PROFUNDIDADE_DO_CORACAO,
-      bevelEnabled: true,
-      bevelThickness: 0.12,
-      bevelSize: 0.08,
-      bevelSegments: 4,
-    });
-    // Centraliza a espessura para o coração girar em torno do próprio eixo.
-    geometria.translate(0, 0, -PROFUNDIDADE_DO_CORACAO / 2);
-    return geometria;
-  }, []);
-
-  const materialDoCoracao = useMemo(
-    () => new MeshStandardMaterial({ color: COR_DO_CORACAO, roughness: 0.45 }),
-    [],
-  );
-
-  const coracoesDaEspiral = useMemo(() => {
-    const coracoes: CoracaoDaEspiral[] = [];
-    for (let anel = 0; anel < QUANTIDADE_DE_ANEIS; anel++) {
-      const raioDoAnel = RAIO_DO_ANEL_INTERNO * CRESCIMENTO_ENTRE_ANEIS ** anel;
-      const defasagemDoAnel = anel % 2 === 0 ? 0 : Math.PI / CORACOES_POR_ANEL;
-      for (let posicaoNoAnel = 0; posicaoNoAnel < CORACOES_POR_ANEL; posicaoNoAnel++) {
-        const anguloNoAnel = (posicaoNoAnel / CORACOES_POR_ANEL) * 2 * Math.PI + defasagemDoAnel;
-        coracoes.push({
-          x: raioDoAnel * Math.cos(anguloNoAnel),
-          y: raioDoAnel * Math.sin(anguloNoAnel),
-          anguloNoAnel,
-          altura: raioDoAnel * ALTURA_RELATIVA_AO_RAIO,
-        });
-      }
-    }
-    return coracoes;
-  }, []);
-
-  const grupoDaCena = useAnimacaoDaCena("espiral", (segundos, { scene }) => {
-    scene.background = COR_DO_FUNDO;
+  const grupoDaCena = useAnimacaoDaCena("espiral", (segundos) => {
     coracoesQueGiram.current.forEach((coracao, indiceDoCoracao) => {
-      if (coracao) coracao.rotation.y = calcularGiroDoCoracao(segundos, indiceDoCoracao, coracoesDaEspiral.length);
+      const giro = calcularGiroDoCoracao(segundos, indiceDoCoracao, CORACOES_DA_ESPIRAL.length);
+      const larguraAparente = Math.max(Math.abs(Math.cos(giro)), LARGURA_MINIMA_DE_LADO);
+      const { giroDoDesenhoEmGraus } = CORACOES_DA_ESPIRAL[indiceDoCoracao];
+      // Achata o coração ao longo do próprio eixo (ponta–vinco), que é o eixo do giro no vídeo.
+      coracao?.setAttribute(
+        "transform",
+        `rotate(${giroDoDesenhoEmGraus}) scale(${larguraAparente} 1) rotate(${-giroDoDesenhoEmGraus})`,
+      );
     });
   });
 
   return (
-    <group ref={grupoDaCena}>
-      <ambientLight intensity={1.4} />
-      <directionalLight position={[-3, 5, 6]} intensity={2.4} />
-      {coracoesDaEspiral.map(({ x, y, anguloNoAnel, altura }, indiceDoCoracao) => (
-        // A ponta aponta para o centro: o eixo vertical do coração fica alinhado ao raio.
-        <group key={indiceDoCoracao} position={[x, y, 0]} rotation={[0, 0, anguloNoAnel - Math.PI / 2]} scale={altura}>
-          <mesh
+    <g ref={grupoDaCena} data-cena="espiral">
+      <defs>
+        <linearGradient id={idDoDegradeDaFace} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ffa774" />
+          <stop offset="1" stopColor="#ff8450" />
+        </linearGradient>
+      </defs>
+      <rect x={-5000} y={-5000} width={10000} height={10000} className="fill-[#ffe0fe]" />
+      {CORACOES_DA_ESPIRAL.map(({ x, y, caminhoDaFace, deslocamentoDaLateral }, indiceDoCoracao) => (
+        <g key={indiceDoCoracao} transform={`translate(${x} ${y})`}>
+          <g
             ref={(coracao) => {
               coracoesQueGiram.current[indiceDoCoracao] = coracao;
             }}
-            geometry={geometriaDoCoracao}
-            material={materialDoCoracao}
-          />
-        </group>
+          >
+            <path
+              d={caminhoDaFace}
+              transform={`translate(${deslocamentoDaLateral.x} ${deslocamentoDaLateral.y})`}
+              className="fill-[#e46f3c]"
+            />
+            <path d={caminhoDaFace} fill={`url(#${idDoDegradeDaFace})`} />
+          </g>
+        </g>
       ))}
-    </group>
+    </g>
   );
 }

@@ -1,51 +1,47 @@
 "use client";
 
-import { useMemo, useRef } from "react";
-import { Color, DoubleSide, ShapeGeometry, type Mesh } from "three";
+import { useRef } from "react";
 import { useAnimacaoDaCena } from "../animacaoDaCena";
-import { criarFormaDoCoracao } from "../formaDoCoracao";
-
-const COR_DO_FUNDO = new Color("#ffbafc");
+import { criarCaminhoDoCoracao } from "../caminhoDoCoracao";
 
 // No vídeo cada anel tem 0,72 do tamanho do anel de fora e um novo nasce no centro a cada 0,152 s.
 const RAZAO_ENTRE_ANEIS = 0.72;
 const INTERVALO_ENTRE_ANEIS_EM_SEGUNDOS = 0.152;
 // O anel de fora passa da tela até no celular em pé; os de dentro somem no ponto de fuga.
-const QUANTIDADE_DE_ANEIS = 28;
-const ALTURA_DO_ANEL_MAIS_EXTERNO = 40;
-const ESPESSURA_DO_ANEL = 0.045;
+const QUANTIDADE_DE_ANEIS = 30;
+const ALTURA_DO_ANEL_MAIS_EXTERNO = 4000;
+// O desenho base tem altura 100; a escala de cada anel leva junto a espessura do traço.
+const ALTURA_DO_DESENHO_BASE = 100;
+const ESPESSURA_DO_TRACO = 4.5;
+
+const CAMINHO_DO_ANEL = criarCaminhoDoCoracao(120, ALTURA_DO_DESENHO_BASE);
 
 export function TunelDeCoracoes() {
-  const aneisDoTunel = useRef<Array<Mesh | null>>([]);
+  const aneisDoTunel = useRef<Array<SVGPathElement | null>>([]);
 
-  const geometriaDoAnel = useMemo(() => {
-    const contornoExterno = criarFormaDoCoracao(26);
-    contornoExterno.holes.push(criarFormaDoCoracao(26, 1 - 2 * ESPESSURA_DO_ANEL));
-    return new ShapeGeometry(contornoExterno);
-  }, []);
-
-  const grupoDaCena = useAnimacaoDaCena("tunel", (segundos, { scene }) => {
-    scene.background = COR_DO_FUNDO;
+  const grupoDaCena = useAnimacaoDaCena("tunel", (segundos) => {
     const avancoDoZoom = (segundos % INTERVALO_ENTRE_ANEIS_EM_SEGUNDOS) / INTERVALO_ENTRE_ANEIS_EM_SEGUNDOS;
     aneisDoTunel.current.forEach((anel, posicaoNoTunel) => {
       const alturaDoAnel = ALTURA_DO_ANEL_MAIS_EXTERNO * RAZAO_ENTRE_ANEIS ** (posicaoNoTunel - avancoDoZoom);
-      anel?.scale.setScalar(alturaDoAnel);
+      anel?.setAttribute("transform", `scale(${alturaDoAnel / ALTURA_DO_DESENHO_BASE})`);
     });
   });
 
   return (
-    <group ref={grupoDaCena}>
+    <g ref={grupoDaCena} data-cena="tunel">
+      <rect x={-5000} y={-5000} width={10000} height={10000} className="fill-[#ffbafc]" />
       {Array.from({ length: QUANTIDADE_DE_ANEIS }, (_, posicaoNoTunel) => (
-        <mesh
+        <path
           key={posicaoNoTunel}
           ref={(anel) => {
             aneisDoTunel.current[posicaoNoTunel] = anel;
           }}
-          geometry={geometriaDoAnel}
-        >
-          <meshBasicMaterial color="white" side={DoubleSide} />
-        </mesh>
+          d={CAMINHO_DO_ANEL}
+          strokeWidth={ESPESSURA_DO_TRACO}
+          strokeLinejoin="miter"
+          className="fill-none stroke-white"
+        />
       ))}
-    </group>
+    </g>
   );
 }

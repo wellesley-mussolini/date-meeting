@@ -1,35 +1,21 @@
 import { render } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { FundoAnimado } from "./FundoAnimado";
 
-// O jsdom não mede elementos nem tem ResizeObserver; sem isso o Canvas nunca tenta criar o WebGL
-// e o teste não reproduziria o navegador real.
-class ObservadorDeTamanhoDoNavegador {
-  constructor(private readonly avisarMudancaDeTamanho: ResizeObserverCallback) {}
-  observe() {
-    this.avisarMudancaDeTamanho([], this as unknown as ResizeObserver);
-  }
-  unobserve() {}
-  disconnect() {}
+function buscarCenasVisiveis(fundo: HTMLElement) {
+  return [...fundo.querySelectorAll<SVGElement>("[data-cena]")]
+    .filter((cena) => cena.getAttribute("display") !== "none")
+    .map((cena) => cena.dataset.cena);
 }
 
-describe("FundoAnimado sem WebGL", () => {
-  beforeEach(() => {
-    vi.stubGlobal("ResizeObserver", ObservadorDeTamanhoDoNavegador);
-    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 960, 720));
-    // Navegador com aceleração de hardware desligada ou GPU bloqueada: nenhum contexto WebGL é criado.
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
-  });
+describe("FundoAnimado", () => {
+  it.each([
+    { segundo: 2, cenaNoAr: "campo" },
+    { segundo: 13, cenaNoAr: "tunel" },
+    { segundo: 21, cenaNoAr: "espiral" },
+  ])("mostra só o $cenaNoAr aos $segundo s, como no vídeo", ({ segundo, cenaNoAr }) => {
+    const { container } = render(<FundoAnimado segundoInicial={segundo} congelado />);
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
-  });
-
-  it("mostra o fundo estático em vez de derrubar o layout", () => {
-    const { container } = render(<FundoAnimado />);
-
-    expect(container.querySelector("canvas")).toBeNull();
-    expect(container.firstElementChild).not.toBeNull();
+    expect(buscarCenasVisiveis(container)).toEqual([cenaNoAr]);
   });
 });

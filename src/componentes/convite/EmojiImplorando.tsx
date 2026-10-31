@@ -1,31 +1,23 @@
 import { useId } from "react";
+import { RostoDoEmoji } from "./RostoDoEmoji";
 
 type PropriedadesDoEmoji = { className?: string };
 
 // Desenho próprio do emoji implorando (olhos marejados olhando para cima e mãos juntas), em SVG para
 // ficar nítido em qualquer tamanho e não depender de imagem de banco de imagens.
 export function EmojiImplorando({ className }: PropriedadesDoEmoji) {
-  const idDoDegradeDoRosto = useId();
   const idDoDegradeDasMaos = useId();
 
   return (
-    <svg viewBox="0 0 200 200" aria-hidden className={className}>
+    <svg viewBox="0 0 200 200" aria-hidden data-emoji="implorando" className={className}>
       <defs>
-        <radialGradient id={idDoDegradeDoRosto} cx="42%" cy="35%" r="70%">
-          <stop offset="0" stopColor="#fff176" />
-          <stop offset="0.6" stopColor="#ffd23f" />
-          <stop offset="1" stopColor="#f5a623" />
-        </radialGradient>
         <linearGradient id={idDoDegradeDasMaos} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#ffe066" />
           <stop offset="1" stopColor="#f7b32b" />
         </linearGradient>
       </defs>
 
-      <circle cx="100" cy="96" r="88" fill={`url(#${idDoDegradeDoRosto})`} className="stroke-[#e59a12]" strokeWidth="3" />
-
-      <ellipse cx="46" cy="122" rx="16" ry="9" className="fill-[#ff8a80] opacity-50" />
-      <ellipse cx="154" cy="122" rx="16" ry="9" className="fill-[#ff8a80] opacity-50" />
+      <RostoDoEmoji />
 
       {/* Sobrancelhas preocupadas: sobem em direção ao centro do rosto. */}
       <path d="M40 58 Q58 46 78 46" className="fill-none stroke-[#8a5a00]" strokeWidth="5" strokeLinecap="round" />

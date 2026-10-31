@@ -1,0 +1,45 @@
+name: Publicar no GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Só uma publicação por vez; uma nova não cancela a que já está no ar pela metade.
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  gerar-site:
+    name: Gerar o site estático
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          CAMINHO_NO_GITHUB_PAGES: /${{ github.event.repository.name }}
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: out
+
+  publicar:
+    name: Publicar
+    needs: gerar-site
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.publicacao.outputs.page_url }}
+    steps:
+      - id: publicacao
+        uses: actions/deploy-pages@v4

@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💘 date-meeting
 
-## Getting Started
+> **Aviso:** este repositório é um shitpost. Não leve a sério. Ele existe só pra fazer alguém rir (e quem sabe arrumar um date 👀).
 
-First, run the development server:
+**👉 Acesse aqui: https://wellesley-mussolini.github.io/date-meeting/**
+
+## O que é isso?
+
+Um convite pra um date, em forma de site. Funciona assim:
+
+1. Aparece um emoji implorando e a pergunta: **"Você aceitaria ir a um date comigo?"**
+2. Tem **SIM** e tem **NÃO**. O NÃO até funciona... mais ou menos. Clica nele e vê o que acontece. 🥺
+3. Se disser SIM, o emoji aparece de rosa nos dentes, porque ninguém estava esperando isso.
+4. Aí escolhe a data, o horário e o programa (cinema, barzinho, jantar, karaokê...).
+5. No final, um pinguim de óculos escuros confirma tudo: **TÔ CONTIGO GATINHA. 🖤**
+
+Tudo isso em cima de um fundo animado de corações que é praticamente um videoclipe dos anos 2000.
+
+## Perguntas que ninguém fez
+
+**Por que foi feito com TDD, testes, CI e revisão de código?**
+Porque se é pra fazer besteira, que seja besteira bem feita.
+
+**Funciona no celular?**
+Funciona. O fundo é SVG e não depende de placa de vídeo, então abre em qualquer navegador.
+
+**Posso usar pra chamar alguém pra sair?**
+Pode. Não garantimos o resultado. 🐧🌹
+
+## Rodando na sua máquina
+
+Precisa de Node 24.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # abre em http://localhost:3000
+npm test           # testes (sim, tem testes)
+npm run storybook  # vê cada pedaço isolado
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Feito com Next.js, TypeScript e Tailwind, e com muito amor e zero seriedade.

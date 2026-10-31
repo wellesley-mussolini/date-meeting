@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "date-meeting",
+  title: "Wellesley Mussolini",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
